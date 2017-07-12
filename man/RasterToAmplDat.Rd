@@ -38,4 +38,6 @@ RasterToAmplDat(Stack = univariate)
 }
 \author{
 Derek Corcoran <derek.corcoran.barrios@gmail.com>
+
+Javier Fajardo <javierfajnolla@gmail.com >
 }

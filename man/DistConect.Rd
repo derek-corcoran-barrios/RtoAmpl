@@ -29,4 +29,6 @@ DistConect(Raster = r, Distance = 1000000, Time = 7)
 }
 \author{
 Derek Corcoran <derek.corcoran.barrios@gmail.com>
+
+Javier Fajardo <javierfajnolla@gmail.com >
 }

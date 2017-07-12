@@ -21,6 +21,7 @@
 #' @importFrom raster ncell
 #' @importFrom raster xyFromCell
 #' @author Derek Corcoran <derek.corcoran.barrios@gmail.com>
+#' @author Javier Fajardo <javierfajnolla@gmail.com >
 #' @export
 
 DistConect<- function(Raster, Distance, Time = 7){
@@ -81,6 +82,7 @@ DistConect<- function(Raster, Distance, Time = 7){
 #' @importFrom tidyr spread
 #' @importFrom tidyr unite_
 #' @author Derek Corcoran <derek.corcoran.barrios@gmail.com>
+#' @author Javier Fajardo <javierfajnolla@gmail.com >
 #' @export
 
 RasterToAmplDat <- function(Stack, maxalpha = 10, maxbiomass = 2, maxcapacidad = 10, name = "Stack", Dist = 1000000){
