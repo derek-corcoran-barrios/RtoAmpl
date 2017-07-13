@@ -193,3 +193,105 @@ RasterToAmplDat <- function(Stack, maxalpha = 10, maxbiomass = 2, maxcapacidad =
   sink()
   return(list(Nodos = Nodos, Biomasa = Biomasa, Alphas = Alphas, Alpha = Alpha))
 }
+
+#' Generates an AMPL dat file from a Stack
+#'
+#' Generates an AMPL dat file from a Stack in which each file is the projection
+#' of a species distribution model into a time slice
+#' @param Stack a raster with the space where the species will be inhabiting
+#' @param Distance the maximum dispersal distance of the species modeled in the
+#' stack
+#' @param Time number of time slices present in the Stack
+#' @param name the name of the .dat file that will be exported, defaults in
+#' stack
+#' @param Threshold minimum value in the model to allow the species to exist
+#' @return exports a .dat file to feed the AMPL model
+#' @examples
+#' data("univariate")
+#' RtoQuadAmplDat(Stack = univariate, Distance = 1000000, Threshold = 0.5,
+#' name = "TeSt")
+#' @importFrom gdistance accCost
+#' @importFrom gdistance geoCorrection
+#' @importFrom gdistance transition
+#' @importFrom raster ncell
+#' @importFrom raster nlayers
+#' @importFrom raster values
+#' @importFrom raster xyFromCell
+#' @importFrom tidyr unite_
+#' @author Derek Corcoran <derek.corcoran.barrios@gmail.com>
+#' @author Javier Fajardo <javierfajnolla@gmail.com >
+#' @export
+
+
+RtoQuadAmplDat <- function(Stack, Distance, Time = 7, Threshold, name){
+
+  values(Stack)[values(Stack) < Threshold] = 0
+  values(Stack)[values(Stack) >= Threshold] = 1
+
+  Suitability <- list()
+  for (i in 1:nlayers(Stack)){
+    temp <- data.frame(Suitability = values(Stack[[i]]), ID = 1:length(values(Stack[[i]])), Time = i-1)
+    Suitability[[i]] <- temp[complete.cases(temp),]
+  }
+
+  Suitability <- do.call("rbind", Suitability)
+
+  Raster <- sum(Stack)
+
+  Raster[values(Raster) > 0] = 1
+  Raster[values(Raster) == 0] = NA
+
+  h16  <- transition(Raster, transitionFunction=function(x){1},16,symm=FALSE)
+
+  h16   <- geoCorrection(h16, scl=FALSE)
+
+  ID <-c(1:ncell(Raster))[!is.na(values(Raster))]
+
+  B <- xyFromCell(Raster, cell = ID)
+
+  connections <- list()
+  for (i in  c(1:nrow(B))){
+    arcs <- list()
+    temp <- accCost(h16,B[i,])
+    temp[values(temp) > Distance] = NA
+    index <- c(1:ncell(temp))[!is.na(values(temp))]
+    for (j in index){
+      arcs[[j]] <- c(ID[i], j, temp[j])
+    }
+    connections[[i]] <- do.call("rbind", arcs)
+    colnames(connections[[i]]) <- c("from", "to", "dist")
+    print(paste(i, "of", nrow(B)))
+  }
+
+  connections <- do.call("rbind", connections)
+  connections <- as.data.frame(connections)
+  temp <-  split(Suitability, Suitability$Time)
+  Suitability <- do.call(cbind, lapply(1:length(temp), function(i){
+    if (i == 1){
+      setNames(data.frame(paste("[",temp[[i]][["ID"]], ",*","]", sep = ""), temp[[i]]["Time"], temp[[i]]["Suitability"]),
+               c("V", paste("T", i, sep = ""), i-1))
+    } else if (i == length(temp)){
+      setNames(data.frame(temp[[i]]["Time"], temp[[i]]["Suitability"], rep("\n", NROW(temp[[i]]))),
+               c(paste("T", i, sep = ""), i-1, "line"))
+    } else {
+      setNames(data.frame(temp[[i]]["Time"], temp[[i]]["Suitability"]),
+               c(paste("T", i, sep = ""), i-1))
+    }
+  }))
+
+  sink(paste0(name, ".dat"))
+  cat(c("set V :=", unique(unique(connections$to), unique(connections$to)), ";"))
+  cat("\n")
+  cat(c("set E :=", paste0("(",unique(unite_(connections, col = "V", sep = ",", from = c("from", "to"))$V), ")"), ";"))
+  cat("\n")
+  cat(paste0("param T:= ", Time,";"))
+  cat("\n")
+  cat("\n")
+  cat("param u :=")
+  cat("\n")
+  cat(do.call(paste, Suitability))
+  cat(";")
+  cat("\n")
+  sink()
+  return(list(connections = connections, Suitability = Suitability))
+}

@@ -2,6 +2,7 @@
 
 export(DistConect)
 export(RasterToAmplDat)
+export(RtoQuadAmplDat)
 importFrom(dplyr,group_by)
 importFrom(dplyr,summarize)
 importFrom(gdistance,accCost)
