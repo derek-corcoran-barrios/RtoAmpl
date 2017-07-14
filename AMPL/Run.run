@@ -1,0 +1,25 @@
+reset;
+
+model ./lp1.mod;
+data ./Univariate.dat;
+
+
+# Definicion de parametros de dispersion
+#=======================================
+for {v in V} { let grado[v]:= sum{(v,w) in E} 1; }
+for {(v,w) in E, t in 0..T-1} { let beta[v,w,t]:= 1/grado[v]; }
+
+option solver './gurobi';
+solve;
+print {v in V}: v,z[v] > univz.txt;
+close univz.txt;
+
+param w {V,0..T+1};
+let {v in V, t in 0..T} w[v,t] := y[v,t];
+let {v in V} w[v,T+1]:= alpha[v,T]*y[v,T];
+print {v in V, t in 0..T+1}: v,t,w[v,t] > univy.txt;
+close univy.txt;
+   
+
+
+

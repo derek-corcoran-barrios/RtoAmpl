@@ -1,0 +1,14 @@
+reset;
+
+model ./phillips.mod;
+data ./BivariateQ.dat;
+
+
+
+
+option solver './gurobi';
+solve;
+print {v in V}: v,max{t in 0..T} y[v,t] > BivariateQ.txt;
+close BivariateQ.txt;
+
+   
