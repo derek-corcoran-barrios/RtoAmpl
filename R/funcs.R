@@ -142,7 +142,7 @@ RasterToAmplDat <- function(Stack, maxalpha = 10, maxbiomass = 2, maxcapacidad =
 
   Cost <- data.frame(ID = Biomasas$ID, Cost = 1, line = "\n")
 
-  Beta <- DistConect(Stack[[1]], Distance = Dist)
+  Beta <- DistConect(Stack[[1]], Distance = Dist, Time = nlayers(Stack))
   temp <-  split(Beta, Beta$Time)
   Betas <- do.call(cbind, lapply(1:length(temp), function(i){
     if (i == 1){
