@@ -12,6 +12,7 @@
 #' @examples
 #' data("r")
 #' DistConect(Raster = r, Distance = 1000000, Time = 7)
+#' @importFrom dplyr filter
 #' @importFrom dplyr group_by
 #' @importFrom dplyr summarize
 #' @importFrom gdistance accCost
@@ -25,32 +26,44 @@
 #' @export
 
 DistConect<- function(Raster, Distance, Time = 7){
+  #First we make a transition layer with the function transition from gdistance
   h16  <- transition(Raster, transitionFunction=function(x){1},16,symm=FALSE)
-
+  #Then geocorrect for projection
   h16   <- geoCorrection(h16, scl=FALSE)
-
+  #Since transition layers work with XY rather than IDs, get a matrix of XY coordinates
   B <- xyFromCell(Raster, cell = 1:ncell(Raster))
-
+  #This nested loop is where the Bottle neck is
+  #Start a list
   connections <- list()
-  for (i in 1:nrow(B)){
-    arcs <- list()
-    temp <- accCost(h16,B[i,])
-    temp[values(temp) > Distance] = NA
-    index <- c(1:ncell(temp))[!is.na(values(temp))]
-    for (j in index){
-      arcs[[j]] <- c(i, j, temp[j])
-    }
-    connections[[i]] <- do.call("rbind", arcs)
-    colnames(connections[[i]]) <- c("from", "to", "dist")
-    print(paste(i, "of", nrow(B)))
-  }
+  #For each pair of cells in B
+  accCost2 <- function(x, fromCoords) {
 
+    fromCells <- cellFromXY(x, fromCoords)
+    tr <- transitionMatrix(x)
+    tr <- rBind(tr, rep(0, nrow(tr)))
+    tr <- cBind(tr, rep(0, nrow(tr)))
+    startNode <- nrow(tr)
+    adjP <- cbind(rep(startNode, times = length(fromCells)), fromCells)
+    tr[adjP] <- Inf
+    adjacencyGraph <- graph.adjacency(tr, mode = "directed", weighted = TRUE)
+    E(adjacencyGraph)$weight <- 1/E(adjacencyGraph)$weight
+    return(shortest.paths(adjacencyGraph, v = startNode, mode = "out")[-startNode])
+  }
+  for (i in 1:nrow(B)){
+    #Create a temporal raster for each row with the distance from cell xy to all other cells
+    temp <- accCost2(h16,B[i,])
+    index <- which(temp < Distance)
+    connections[[i]] <- cbind(i, index, temp[index])
+  }
+  #Get everything together as a large data frame
   connections <- do.call("rbind", connections)
   connections <- as.data.frame(connections)
+  colnames(connections) <- c("from", "to", "dist")
   connections$Beta <- exp(-(connections$dist/max(connections$dist)))
   b <- connections %>% group_by(from) %>% summarize(TotalBeta = sum(Beta))
   connections <-merge(connections, b)
   connections$beta <-connections$Beta /connections$TotalBeta
+  connections<- dplyr::filter(connections, beta > quantile(beta, 0.05))
   connections <- connections[,c(1,2,6)]
   n <- nrow(connections)
   connections <- do.call("rbind", replicate((Time), connections, simplify = FALSE))
@@ -76,7 +89,7 @@ DistConect<- function(Raster, Distance, Time = 7){
 #' @return exports a .dat file to feed the AMPL model
 #' @examples
 #' data("univariate")
-#' RasterToAmplDat(Stack = univariate)
+#' RasterToAmplDat(Stack = univariate, Threshold = 0.5)
 #' @importFrom raster nlayers
 #' @importFrom raster values
 #' @importFrom tidyr spread

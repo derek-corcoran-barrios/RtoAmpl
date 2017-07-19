@@ -34,7 +34,7 @@ of a species distribution model into a time slice
 }
 \examples{
 data("univariate")
-RasterToAmplDat(Stack = univariate)
+RasterToAmplDat(Stack = univariate, Threshold = 0.5)
 }
 \author{
 Derek Corcoran <derek.corcoran.barrios@gmail.com>
