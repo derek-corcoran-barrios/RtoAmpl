@@ -85,7 +85,19 @@ DistConect<- function(Raster, Distance, Time = 7){
 #' @author Javier Fajardo <javierfajnolla@gmail.com >
 #' @export
 
-RasterToAmplDat <- function(Stack, maxalpha = 10, maxbiomass = 2, maxcapacidad = 10, name = "Stack", Dist = 1000000){
+RasterToAmplDat <- function(Stack, maxalpha = 10, maxbiomass = 2, maxcapacidad = 10, name = "Stack", Dist = 1000000, Threshold){
+
+  TempStack <- Stack
+  values(TempStack)[values(TempStack) < Threshold] = 0
+  values(TempStack)[values(TempStack) >= Threshold] = 1
+
+  TempRaster <- sum(TempStack)
+
+  TempRaster[values(TempRaster) > 0] = 1
+  TempRaster[values(TempRaster) == 0] = NA
+
+  Stack <- Stack*TempRaster
+
   Alpha <- list()
   for (i in 1:nlayers(Stack)){
     temp <- data.frame(Alpha = values(Stack[[i]]), ID = 1:length(values(Stack[[i]])), Time = i)

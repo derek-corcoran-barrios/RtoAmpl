@@ -5,7 +5,7 @@
 \title{Generates an AMPL dat file from a Stack}
 \usage{
 RasterToAmplDat(Stack, maxalpha = 10, maxbiomass = 2, maxcapacidad = 10,
-  name = "Stack", Dist = 1e+06)
+  name = "Stack", Dist = 1e+06, Threshold)
 }
 \arguments{
 \item{Stack}{a raster with the space where the species will be inhabiting}
