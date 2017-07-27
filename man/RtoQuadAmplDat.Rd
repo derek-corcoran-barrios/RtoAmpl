@@ -4,7 +4,7 @@
 \alias{RtoQuadAmplDat}
 \title{Generates an AMPL dat file from a Stack}
 \usage{
-RtoQuadAmplDat(Stack, Distance, Time = 7, Threshold, name)
+RtoQuadAmplDat(Stack, Distance, Threshold, name)
 }
 \arguments{
 \item{Stack}{a raster with the space where the species will be inhabiting}
@@ -12,12 +12,12 @@ RtoQuadAmplDat(Stack, Distance, Time = 7, Threshold, name)
 \item{Distance}{the maximum dispersal distance of the species modeled in the
 stack}
 
-\item{Time}{number of time slices present in the Stack}
-
 \item{Threshold}{minimum value in the model to allow the species to exist}
 
 \item{name}{the name of the .dat file that will be exported, defaults in
 stack}
+
+\item{Time}{number of time slices present in the Stack}
 }
 \value{
 exports a .dat file to feed the AMPL model

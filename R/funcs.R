@@ -248,7 +248,20 @@ RasterToAmplDat <- function(Stack, maxalpha = 10, maxbiomass = 2, maxcapacidad =
 #' @export
 
 
-RtoQuadAmplDat <- function(Stack, Distance, Time = 7, Threshold, name){
+RtoQuadAmplDat <- function(Stack, Distance, Threshold, name){
+  accCost2 <- function(x, fromCoords) {
+
+    fromCells <- cellFromXY(x, fromCoords)
+    tr <- transitionMatrix(x)
+    tr <- rBind(tr, rep(0, nrow(tr)))
+    tr <- cBind(tr, rep(0, nrow(tr)))
+    startNode <- nrow(tr)
+    adjP <- cbind(rep(startNode, times = length(fromCells)), fromCells)
+    tr[adjP] <- Inf
+    adjacencyGraph <- graph.adjacency(tr, mode = "directed", weighted = TRUE)
+    E(adjacencyGraph)$weight <- 1/E(adjacencyGraph)$weight
+    return(shortest.paths(adjacencyGraph, v = startNode, mode = "out")[-startNode])
+  }
 
   values(Stack)[values(Stack) < Threshold] = 0
   values(Stack)[values(Stack) >= Threshold] = 1
@@ -275,21 +288,17 @@ RtoQuadAmplDat <- function(Stack, Distance, Time = 7, Threshold, name){
   B <- xyFromCell(Raster, cell = ID)
 
   connections <- list()
-  for (i in  c(1:nrow(B))){
-    arcs <- list()
-    temp <- accCost(h16,B[i,])
-    temp[values(temp) > Distance] = NA
-    index <- c(1:ncell(temp))[!is.na(values(temp))]
-    for (j in index){
-      arcs[[j]] <- c(ID[i], j, temp[j])
-    }
-    connections[[i]] <- do.call("rbind", arcs)
-    colnames(connections[[i]]) <- c("from", "to", "dist")
-    print(paste(i, "of", nrow(B)))
+  #For each pair of cells in B
+  for (i in 1:nrow(B)){
+    #Create a temporal raster for each row with the distance from cell xy to all other cells
+    temp <- accCost2(h16,B[i,])
+    index <- which(temp < Distance)
+    connections[[i]] <- cbind(ID[i], index, temp[index])
   }
-
+  #Get everything together as a large data frame
   connections <- do.call("rbind", connections)
   connections <- as.data.frame(connections)
+  colnames(connections) <- c("from", "to", "dist")
   temp <-  split(Suitability, Suitability$Time)
   Suitability <- do.call(cbind, lapply(1:length(temp), function(i){
     if (i == 1){
@@ -307,9 +316,11 @@ RtoQuadAmplDat <- function(Stack, Distance, Time = 7, Threshold, name){
   sink(paste0(name, ".dat"))
   cat(c("set V :=", unique(unique(connections$to), unique(connections$to)), ";"))
   cat("\n")
+  cat("\n")
   cat(c("set E :=", paste0("(",unique(unite_(connections, col = "V", sep = ",", from = c("from", "to"))$V), ")"), ";"))
   cat("\n")
-  cat(paste0("param T:= ", Time,";"))
+  cat("\n")
+  cat(paste0("param T:= ", nlayers(Stack),";"))
   cat("\n")
   cat("\n")
   cat("param u :=")
