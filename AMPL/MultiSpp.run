@@ -1,0 +1,11 @@
+reset;
+
+model phillipsMulti.mod; 
+
+data Phillips2.dat; 
+
+option solver './gurobi';
+
+solve;
+
+
