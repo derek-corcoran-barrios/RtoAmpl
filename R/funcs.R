@@ -340,10 +340,11 @@ RtoQuadAmplDat <- function(Stack, Distance, Threshold, name){
 #' @param Dist the maximum dispersal distance of the species modeled in the
 #' stack
 #' @param name the name of the .dat file that will be exported
+#' @param nchains the number of chains to go through
 #' @return exports a .dat file to feed the AMPL model
 #' @examples
 #' data("BinSpp")
-#' MultiSppQuad(Stacklist = BinSpp, Distance = 1000000, name = "Two")
+#' MultiSppQuad(Stacklist = BinSpp, Dist = 1000000, name = "Two")
 #' @importFrom dplyr filter
 #' @importFrom gdistance accCost
 #' @importFrom gdistance geoCorrection
@@ -357,7 +358,7 @@ RtoQuadAmplDat <- function(Stack, Distance, Threshold, name){
 #' @author Javier Fajardo <javierfajnolla@gmail.com >
 #' @export
 
-MultiSppQuad <- function(Stacklist, Dist, name){
+MultiSppQuad <- function(Stacklist, Dist, name, nchains = 4){
 
   accCost2 <- function(x, fromCoords) {
 
@@ -442,8 +443,13 @@ MultiSppQuad <- function(Stacklist, Dist, name){
   connections <- conns
   connections <- do.call("rbind", connections)
 
+  Nchains <- data.frame(Spp = Spps, Nchains = nchains, Space = "\n")
+
   sink(paste0(name, ".dat"))
   cat(c("set V :=", unique(unique(connections$to), unique(connections$to)), ";"))
+  cat("\n")
+  cat("\n")
+  cat(c("set SP :=", names(Stacklist)))
   cat("\n")
   cat("\n")
   cat(c("set E :=", paste0("(",unique(unite_(connections, col = "V", sep = ",", from = c("from", "to"))$V), ")"), ";"))
@@ -455,6 +461,10 @@ MultiSppQuad <- function(Stacklist, Dist, name){
   cat("param u :=")
   cat("\n")
   cat(do.call(paste, Suitability))
+  cat(";")
+  cat("\n")
+  cat("param nchains := ")
+  cat(do.call(paste, Nchains))
   cat(";")
   cat("\n")
   sink()
