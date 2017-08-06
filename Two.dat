@@ -208,6 +208,7 @@ param u :=
  [SpeciesB,99,*] 0 0 1 0 2 0 3 0 4 0 5 1 6 1 7 1 
  [SpeciesB,100,*] 0 0 1 0 2 0 3 0 4 0 5 1 6 1 7 1 
 ;
-param nchains := SpeciesA 4 
+param nchains := 
+SpeciesA 4 
  SpeciesB 4 
 ;
