@@ -18,6 +18,8 @@ stack}
 stack}
 
 \item{Time}{number of time slices present in the Stack}
+
+\item{costlayer}{raster with the costs of each cell}
 }
 \value{
 exports a .dat file to feed the AMPL model

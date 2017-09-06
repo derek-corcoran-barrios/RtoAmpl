@@ -98,7 +98,7 @@ DistConect<- function(Raster, Distance, Time = 7){
 #' @author Javier Fajardo <javierfajnolla@gmail.com >
 #' @export
 
-RasterToAmplDat <- function(Stack, maxalpha = 10, maxbiomass = 2, maxcapacidad = 10, name = "Stack", Dist = 1000000, Threshold){
+RasterToAmplDat <- function(Stack, maxalpha = 10, maxbiomass = 2, maxcapacidad = 10, name = "Stack", Dist = 1000000, Threshold, costlayer){
 
   TempStack <- Stack
   values(TempStack)[values(TempStack) < Threshold] = 0
@@ -165,9 +165,11 @@ RasterToAmplDat <- function(Stack, maxalpha = 10, maxbiomass = 2, maxcapacidad =
   Capacidades <- Capacidades[,c(1,10,2,11,3,12,4,13,5,14,6,15,7,16,8,17,9)]
   Capacidades$line <- "\n"
 
-  Cost <- data.frame(ID = Biomasas$ID, Cost = 1, line = "\n")
+  Cost <- data.frame(ID = Biomasas$ID, Cost = values(costlayer)[Biomasas$ID], line = "\n")
 
   Beta <- DistConect(Stack[[1]], Distance = Dist, Time = nlayers(Stack))
+  Beta <- dplyr::filter(Beta, from %in% unique(Biomasa$ID),
+                        to %in% unique(Biomasa$ID))
   temp <-  split(Beta, Beta$Time)
   Betas <- do.call(cbind, lapply(1:length(temp), function(i){
     if (i == 1){
@@ -216,7 +218,7 @@ RasterToAmplDat <- function(Stack, maxalpha = 10, maxbiomass = 2, maxcapacidad =
   cat(";")
   cat("\n")
   sink()
-  return(list(Nodos = Nodos, Biomasa = Biomasa, Alphas = Alphas, Alpha = Alpha))
+  return(list(Nodos = Nodos, Biomasa = Biomasa, Alphas = Alphas, Alpha = Alpha, Cost = Cost))
 }
 
 #' Generates an AMPL dat file from a Stack
@@ -230,6 +232,7 @@ RasterToAmplDat <- function(Stack, maxalpha = 10, maxbiomass = 2, maxcapacidad =
 #' @param name the name of the .dat file that will be exported, defaults in
 #' stack
 #' @param Threshold minimum value in the model to allow the species to exist
+#' @param costlayer raster with the costs of each cell
 #' @return exports a .dat file to feed the AMPL model
 #' @examples
 #' data("univariate")
