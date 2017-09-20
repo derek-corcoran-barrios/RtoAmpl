@@ -344,6 +344,7 @@ RtoQuadAmplDat <- function(Stack, Distance, Threshold, name){
 #' stack
 #' @param name the name of the .dat file that will be exported
 #' @param nchains the number of chains to go through
+#' @param costlayer raster with the costs of each cell
 #' @return exports a .dat file to feed the AMPL model
 #' @examples
 #' data("BinSpp")
@@ -361,7 +362,7 @@ RtoQuadAmplDat <- function(Stack, Distance, Threshold, name){
 #' @author Javier Fajardo <javierfajnolla@gmail.com >
 #' @export
 
-MultiSppQuad <- function(Stacklist, Dist, name, nchains = 4){
+MultiSppQuad <- function(Stacklist, Dist, name, nchains = 100, costlayer){
 
   accCost2 <- function(x, fromCoords) {
 
@@ -387,6 +388,9 @@ MultiSppQuad <- function(Stacklist, Dist, name, nchains = 4){
     Suitabilities[[j]]$Spp <- names(Stacklist)[j]
   }
   Suitability <- do.call("rbind", Suitabilities)
+  s <- Suitability %>% group_by(ID) %>% summarise(SUMA = sum(Suitability)) %>% filter(SUMA > 0)
+  Suitability <- Suitability[Suitability$ID %in% s$ID,]
+
 
   Spps <- unique(Suitability$Spp)
 
@@ -447,12 +451,17 @@ MultiSppQuad <- function(Stacklist, Dist, name, nchains = 4){
   connections <- do.call("rbind", connections)
 
   Nchains <- data.frame(Spp = Spps, Nchains = nchains, Space = "\n")
+  Cost <- values(costlayer)[unique(unique(connections$to), unique(connections$to))]
+
 
   sink(paste0(name, ".dat"))
   cat(c("set V :=", unique(unique(connections$to), unique(connections$to)), ";"))
   cat("\n")
   cat("\n")
   cat(c("set SP :=", names(Stacklist), ";"))
+  cat("\n")
+  cat("\n")
+  cat(c("set c :=", Cost, ";"))
   cat("\n")
   cat("\n")
   cat(c("set E :=", paste0("(",unique(unite_(connections, col = "V", sep = ",", from = c("from", "to"))$V), ")"), ";"))
@@ -474,3 +483,4 @@ MultiSppQuad <- function(Stacklist, Dist, name, nchains = 4){
   sink()
   return(list(connections = connections, Suitability = Suitability))
 }
+
