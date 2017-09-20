@@ -13,8 +13,8 @@ param b0 {V}; # initial biomass
 param c {V}; # node cost
 param u {V,0..T}; # node biomass capacity
 
-#var z {V} binary;  # buying decision for each node in V
-var z {V};
+var z {V} binary;  # buying decision for each node in V
+#var z {V};
 var y {V,0..T} >= 0; # biomass flow
 
 minimize Buy_Cost:
@@ -36,6 +36,6 @@ subj to Flow_Conservation {w in V, t in 0..T-1}:
 subj to Flow_Capacity {w in V, t in 0..T}:
    y[w,t] <= u[w,t] * z[w];
 
-subj to zeroone {w in V}:
- 0 <= z[w] <=1;
+#subj to zeroone {w in V}:
+ #0 <= z[w] <=1;
 #display sum {v in V} y[v,T]*alpha[v,T];
