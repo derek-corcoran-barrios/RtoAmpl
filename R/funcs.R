@@ -364,6 +364,11 @@ RtoQuadAmplDat <- function(Stack, Distance, Threshold, name){
 
 MultiSppQuad <- function(Stacklist, Dist, name, nchains = 100, costlayer){
 
+  Masklayer <- costlayer
+  values(Masklayer) <- ifelse(is.na(values(Masklayer)), NA, 1)
+  for (i in 1:length(Stacklist)){
+    Stacklist[[i]] <- Stacklist[[i]] * Masklayer
+  }
   accCost2 <- function(x, fromCoords) {
 
     fromCells <- cellFromXY(x, fromCoords)
@@ -483,4 +488,3 @@ MultiSppQuad <- function(Stacklist, Dist, name, nchains = 100, costlayer){
   sink()
   return(list(connections = connections, Suitability = Suitability))
 }
-

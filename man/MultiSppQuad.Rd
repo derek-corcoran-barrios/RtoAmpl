@@ -4,7 +4,7 @@
 \alias{MultiSppQuad}
 \title{Generates an AMPL dat file from a list of Stacks}
 \usage{
-MultiSppQuad(Stacklist, Dist, name, nchains = 4)
+MultiSppQuad(Stacklist, Dist, name, nchains = 100, costlayer)
 }
 \arguments{
 \item{Stacklist}{a list of Stacks with the space where the species will be
@@ -16,6 +16,8 @@ stack}
 \item{name}{the name of the .dat file that will be exported}
 
 \item{nchains}{the number of chains to go through}
+
+\item{costlayer}{raster with the costs of each cell}
 }
 \value{
 exports a .dat file to feed the AMPL model
