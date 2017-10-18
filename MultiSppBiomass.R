@@ -1,7 +1,8 @@
-multisppBiomass <- function(Stacklist, maxalpha = 5, maxbiomass = 2, maxcapacidad = 10, name = "Stack", Dist = 500000, Threshold, costlayer){
+multisppBiomass <- function(Stacklist, maxalpha = 5, maxbiomass = 2, maxcapacidad = 10, name = "Stack", Dist = 500000, Threshold, costlayer, bf = c(1,2)){
 
   Masklayer <- costlayer
   values(Masklayer) <- ifelse(is.na(values(Masklayer)), NA, 1)
+  TempRaster <- list()
   for (i in 1:length(Stacklist)){
     Stacklist[[i]] <- Stacklist[[i]] * Masklayer
     TempStack <- Stacklist[[i]]
@@ -9,11 +10,12 @@ multisppBiomass <- function(Stacklist, maxalpha = 5, maxbiomass = 2, maxcapacida
     values(TempStack)[values(TempStack) < Threshold] = 0
     values(TempStack)[values(TempStack) >= Threshold] = 1
 
-    TempRaster <- sum(TempStack)
-
-    TempRaster[values(TempRaster) > 0] = 1
-    TempRaster[values(TempRaster) == 0] = NA
-
+    TempRaster[i] <- sum(TempStack)
+  }
+  TempRaster <- do.call("sum", TempRaster)
+  TempRaster[values(TempRaster) > 0] = 1
+  TempRaster[values(TempRaster) == 0] = NA
+  for (i in 1:length(Stacklist)){
     Stacklist[[i]] <- Stacklist[[i]]*TempRaster
   }
 
@@ -22,7 +24,7 @@ multisppBiomass <- function(Stacklist, maxalpha = 5, maxbiomass = 2, maxcapacida
   for(j in 1:length(Stacklist)){
     Alpha <- list()
     for (i in 1:nlayers(Stacklist[[j]])){
-      temp <- data.frame(Alpha = values(Stacklist[[j]][[i]]), ID = 1:length(values(Stacklist[[j]][[i]])), Time = i)
+      temp <- data.frame(Alpha = values(Stacklist[[j]][[i]]), ID = 1:length(values(Stacklist[[j]][[i]])), Time = i-1)
       Alpha[[i]] <- temp[complete.cases(temp),]
     }
     Alphas[[j]]<- do.call("rbind", Alpha)
@@ -75,7 +77,7 @@ multisppBiomass <- function(Stacklist, maxalpha = 5, maxbiomass = 2, maxcapacida
   for(j in 1:length(Stacklist)){
     Capacidad <- list()
     for (i in 1:nlayers(Stacklist[[j]])){
-      temp <- data.frame(Capacidad = values(Stacklist[[j]][[i]]), ID = 1:length(values(Stacklist[[j]][[i]])), Time = i)
+      temp <- data.frame(Capacidad = values(Stacklist[[j]][[i]]), ID = 1:length(values(Stacklist[[j]][[i]])), Time = i-1)
       Capacidad[[i]] <- temp[complete.cases(temp),]
     }
     Capacidades[[j]]<- do.call("rbind", Capacidad)
@@ -107,7 +109,13 @@ multisppBiomass <- function(Stacklist, maxalpha = 5, maxbiomass = 2, maxcapacida
 
   Capacidad <-do.call("rbind", Capacidades)
 
-  cost <-values(costlayer)[Nodos]
+
+  cost <-data.frame(ID = Nodos,cost = values(costlayer)[Nodos])
+  cost$ID <- paste0("[", cost$ID, "]")
+  cost$line <- "\n"
+
+  BF <- data.frame(Spp = Spps, BF = bf, Space = "\n")
+
 
   Beta <- list()
   for(i in 1:length(Stacklist)){
@@ -136,6 +144,7 @@ multisppBiomass <- function(Stacklist, maxalpha = 5, maxbiomass = 2, maxcapacida
   sink(paste0(name, ".dat"))
   cat(c("set V :=", Nodos, ";"))
   cat("\n")
+  cat(c("set Sp :=", names(Stacklist), ";"))
   cat("\n")
   cat(c("set E :=", paste0("(",unique(unite_(Beta, col = "V", sep = ",", from = c("from", "to"))$V), ")"), ";"))
   cat("\n")
@@ -161,10 +170,18 @@ multisppBiomass <- function(Stacklist, maxalpha = 5, maxbiomass = 2, maxcapacida
   cat(do.call(paste, Capacidad))
   cat(";")
   cat("\n")
-  cat(c("set c :=", round(cost,4), ";"))
+  cat("param bf := ")
+  cat("\n")
+  cat(do.call(paste, BF))
+  cat(";")
+  cat("\n")
+  cat("param c :=")
+  cat("\n")
+  cat(do.call(paste, cost))
+  cat(";")
   cat("\n")
   sink()
-  return(list(Nodos = Nodos, Biomasa = Biomasa, Alphas = Alphas, Alpha = Alpha, Cost = Cost))
+  return(list(Nodos = Nodos, Biomasa = Biomasa, Alphas = Alphas, Alpha = Alpha))
 }
 
 
@@ -186,6 +203,8 @@ costlayer <- Cost
 Dist = 500000
   Masklayer <- Cost
   values(Masklayer) <- ifelse(is.na(values(Masklayer)), NA, 1)
+
+  TempRaster <- list()
   for (i in 1:length(Stacklist)){
     Stacklist[[i]] <- Stacklist[[i]] * Masklayer
     TempStack <- Stacklist[[i]]
@@ -193,11 +212,12 @@ Dist = 500000
     values(TempStack)[values(TempStack) < 0.3] = 0
     values(TempStack)[values(TempStack) >= 0.3] = 1
 
-    TempRaster <- sum(TempStack)
-
-    TempRaster[values(TempRaster) > 0] = 1
-    TempRaster[values(TempRaster) == 0] = NA
-
+    TempRaster[i] <- sum(TempStack)
+  }
+  TempRaster <- do.call("sum", TempRaster)
+  TempRaster[values(TempRaster) > 0] = 1
+  TempRaster[values(TempRaster) == 0] = NA
+  for (i in 1:length(Stacklist)){
     Stacklist[[i]] <- Stacklist[[i]]*TempRaster
   }
 
@@ -206,7 +226,7 @@ Dist = 500000
     for(j in 1:length(Stacklist)){
       Alpha <- list()
       for (i in 1:nlayers(Stacklist[[j]])){
-        temp <- data.frame(Alpha = values(Stacklist[[j]][[i]]), ID = 1:length(values(Stacklist[[j]][[i]])), Time = i)
+        temp <- data.frame(Alpha = values(Stacklist[[j]][[i]]), ID = 1:length(values(Stacklist[[j]][[i]])), Time = (i-1))
         Alpha[[i]] <- temp[complete.cases(temp),]
       }
       Alphas[[j]]<- do.call("rbind", Alpha)
@@ -261,7 +281,7 @@ Dist = 500000
     for(j in 1:length(Stacklist)){
       Capacidad <- list()
       for (i in 1:nlayers(Stacklist[[j]])){
-        temp <- data.frame(Capacidad = values(Stacklist[[j]][[i]]), ID = 1:length(values(Stacklist[[j]][[i]])), Time = i)
+        temp <- data.frame(Capacidad = values(Stacklist[[j]][[i]]), ID = 1:length(values(Stacklist[[j]][[i]])), Time = i -1)
         Capacidad[[i]] <- temp[complete.cases(temp),]
       }
       Capacidades[[j]]<- do.call("rbind", Capacidad)
@@ -293,7 +313,9 @@ Dist = 500000
 
     Capacidad <-do.call("rbind", Capacidades)
 
-    cost <-values(costlayer)[Nodos]
+    cost <-data.frame(ID = Nodos,cost = values(costlayer)[Nodos])
+    cost$ID <- paste0("[", cost$ID, "]")
+    cost$line <- "\n"
     ###Costo y capacidad listos
     Beta <- list()
     for(i in 1:length(Stacklist)){
@@ -317,6 +339,9 @@ Dist = 500000
                  c(paste("T", i, sep = ""), i-1))
       }
     }))
+setwd("/home/derek/Documents/PostdocPablo/AMPL")
+
+multisppBiomass(Stacklist = Stacklist, costlayer = Cost, Threshold = 0.2, name = "bla")
 
 
-multisppBiomass(Stacklist = Stacklist, costlayer = Cost, Threshold = 0.2)
+setwd("/home/derek/Documents/RtoAmpl")
